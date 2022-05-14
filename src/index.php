@@ -4,6 +4,8 @@ use Phalcon\Mvc\Micro;
 use Phalcon\Loader;
 use Phalcon\Mvc\Micro\Collection as MicroCollection;
 use Phalcon\Mvc\View\Simple;
+use Phalcon\Mvc\Router;
+use Phalcon\Http\Response;
 
 define('BASE_PATH', '/');
 
@@ -25,10 +27,9 @@ $loader->registerDirs(
     ]
 );
 
-// Register autoloader  
+
 $loader->register();
 
-// echo __DIR__ .'/handler';die;
 $app = new Micro();
 
 $app['view'] = function () {
@@ -43,37 +44,25 @@ $app->before(
     function () use ($app) {
         $mw  = explode('/', $_SERVER['REQUEST_URI']);
         if ($mw[1] == "registeruser" || $mw[1] == "acl") {
-            if ($mw[2] == "validate" || $mw[2] == "buildacl" ) {
+            if ($mw[2] == "validate" || $mw[2] == "buildacl") {
                 return true;
             }
         } else {
-            $key = $app->request->get('key');
-            echo $key; die;
-            // if ($key) {
-            //     echo 'true2';
-            //     die;
-            //     return true;
-            // } else {
-            //     echo 'false';
-            //     die;
-            return false;
+            $token = $app->request->get('token');
+            if (isset($token)) {
+                $checkToken = new Api\Handler\Token();
+                $name = $checkToken->checkToken($token);
+                if ($name) {
+                    header('Location: http://localhost:8080/login/index');
+                } else {
+                    echo 'check yout token';
+                    die;
+                    return false;
+                }
+            }
         }
     }
-    // }
 );
-//     function () use ($app) {
-//         if (false === $app['session']->get('auth')) {
-//             $app['flashSession']->error("The user isn't authenticated");
-
-//             $app['response']->redirect('/error');
-
-//             // Return false stops the normal execution
-//             return false;
-//         }
-
-//         return true;
-//     }
-// );
 
 $products = new MicroCollection();
 $products
@@ -158,63 +147,24 @@ $app->get(
             );
     }
 );
-// $app->get(
-//     '/login/auth',
-//     function () use ($app) {
-//         // app/views/invoices/view.phtml
-//         echo $app['view']
-//             ->render(
-//                 '/login/auth',
-//                 []
-//             );
-//     }
-// );
-// $app->get(
-//     '/registeruser/validate',
-//     function () use ($app) {
-//         // app/views/invoices/view.phtml
-//         echo $app['view']
-//             ->render(
-//                 '/registeruser/validate',
-//                 []
-//             );
-//     }
-// );
 
-// $product = new Api\Handler\Product();
-// $order = new Api\Handler\Order();
+$app->get(
+    '/',
+    [
+        '/',
+        '/'
+    ]
+);
 
-// $app = new Micro();
+$router = new Router();
+$router->add(
+    '/',
+    [
+        'controller' => 'login',
+        'action'     => 'index',
+    ]
+);
 
-
-// $app->get(
-//     '/product/search/{keyword}',
-//     [
-//         $product,
-//         'search'
-//     ]
-// );
-// $app->get(
-//     '/product/get/{per_page}/{page}',
-//     [
-//         $product,
-//         'get'
-//     ]
-// );
-// $app->post(
-//     '/order/create/{product_name}/{price}',
-//     [
-//         $order,
-//         'create'
-//     ]
-// );
-// $app->put(
-//     '/order/update/{keyword}',
-//     [
-//         $order,
-//         'update'
-//     ]
-// );
 $app->handle(
     $_SERVER["REQUEST_URI"]
 );
